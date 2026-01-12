@@ -46,5 +46,11 @@ public ResponseEntity<UserResponseDto> updateUser(
     return ResponseEntity.ok(userService.updateUser(id, dto));
 }
 
+@GetMapping("/{id}")
+public ResponseEntity<UserResponseDto> getUserById(@PathVariable Long id) {
+    return ResponseEntity.ok(userService.getUserById(id));
+}
+
+
 }
 

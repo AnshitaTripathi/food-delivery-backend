@@ -4,6 +4,8 @@ import com.fooddelivery.backend.dto.UserRequestDto;
 import com.fooddelivery.backend.dto.UserResponseDto;
 import com.fooddelivery.backend.dto.UserUpdateDto;
 import com.fooddelivery.backend.entity.User;
+import com.fooddelivery.backend.exceptions.DuplicateResourceException;
+import com.fooddelivery.backend.exceptions.ResourceNotFoundException;
 import com.fooddelivery.backend.repository.UserRepository;
 
 import java.util.List;
@@ -23,7 +25,7 @@ public class UserService {
     public UserResponseDto createUser(UserRequestDto dto) {
 
         if (userRepository.existsByEmail(dto.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new DuplicateResourceException("Email already exists");
         }
 
         User user = new User();
@@ -55,8 +57,9 @@ public class UserService {
 
 public UserResponseDto updateUser(Long id, UserUpdateDto dto) {
 
-    User user = userRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+   User user = userRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
 
     if (!user.getEmail().equals(dto.getEmail())
             && userRepository.existsByEmail(dto.getEmail())) {
@@ -74,6 +77,23 @@ public UserResponseDto updateUser(Long id, UserUpdateDto dto) {
             savedUser.getEmail()
     );
 }
+
+private UserResponseDto mapToResponse(User user) {
+    UserResponseDto dto = new UserResponseDto();
+    dto.setId(user.getId());
+    dto.setName(user.getName());
+    dto.setEmail(user.getEmail());
+    return dto;
+}
+
+
+public UserResponseDto getUserById(Long id) {
+    User user = userRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+    return mapToResponse(user);
+}
+
 
 }
 
