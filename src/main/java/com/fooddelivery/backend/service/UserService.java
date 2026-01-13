@@ -7,19 +7,22 @@ import com.fooddelivery.backend.entity.User;
 import com.fooddelivery.backend.exceptions.DuplicateResourceException;
 import com.fooddelivery.backend.exceptions.ResourceNotFoundException;
 import com.fooddelivery.backend.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public UserResponseDto createUser(UserRequestDto dto) {
@@ -31,11 +34,12 @@ public class UserService {
         User user = new User();
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
-        user.setPassword(dto.getPassword());
+
+        //  PASSWORD ENCRYPTION (THIS IS THE KEY LINE)
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
 
         User savedUser = userRepository.save(user);
 
-        // Convert Entity → Response DTO
         return new UserResponseDto(
                 savedUser.getId(),
                 savedUser.getName(),
@@ -44,56 +48,41 @@ public class UserService {
     }
 
     public List<UserResponseDto> getAllUsers() {
-
-    return userRepository.findAll()
-            .stream()
-            .map(user -> new UserResponseDto(
-                    user.getId(),
-                    user.getName(),
-                    user.getEmail()
-            ))
-            .collect(Collectors.toList());
-}
-
-public UserResponseDto updateUser(Long id, UserUpdateDto dto) {
-
-   User user = userRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-
-    if (!user.getEmail().equals(dto.getEmail())
-            && userRepository.existsByEmail(dto.getEmail())) {
-        throw new RuntimeException("Email already exists");
+        return userRepository.findAll()
+                .stream()
+                .map(user -> new UserResponseDto(
+                        user.getId(),
+                        user.getName(),
+                        user.getEmail()
+                ))
+                .collect(Collectors.toList());
     }
 
-    user.setName(dto.getName());
-    user.setEmail(dto.getEmail());
+    public UserResponseDto updateUser(Long id, UserUpdateDto dto) {
 
-    User savedUser = userRepository.save(user);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-    return new UserResponseDto(
-            savedUser.getId(),
-            savedUser.getName(),
-            savedUser.getEmail()
-    );
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+
+        User savedUser = userRepository.save(user);
+
+        return new UserResponseDto(
+                savedUser.getId(),
+                savedUser.getName(),
+                savedUser.getEmail()
+        );
+    }
+
+    public UserResponseDto getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return new UserResponseDto(
+                user.getId(),
+                user.getName(),
+                user.getEmail()
+        );
+    }
 }
-
-private UserResponseDto mapToResponse(User user) {
-    UserResponseDto dto = new UserResponseDto();
-    dto.setId(user.getId());
-    dto.setName(user.getName());
-    dto.setEmail(user.getEmail());
-    return dto;
-}
-
-
-public UserResponseDto getUserById(Long id) {
-    User user = userRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-    return mapToResponse(user);
-}
-
-
-}
-
