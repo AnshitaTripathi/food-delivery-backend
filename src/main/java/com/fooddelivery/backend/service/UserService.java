@@ -30,7 +30,7 @@ public class UserService {
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new DuplicateResourceException("Email already exists");
         }
-
+  
         User user = new User();
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
