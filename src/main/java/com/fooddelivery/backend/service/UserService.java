@@ -7,6 +7,7 @@ import com.fooddelivery.backend.entity.User;
 import com.fooddelivery.backend.exceptions.DuplicateResourceException;
 import com.fooddelivery.backend.exceptions.ResourceNotFoundException;
 import com.fooddelivery.backend.repository.UserRepository;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,17 +26,16 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    // ===== CREATE USER =====
     public UserResponseDto createUser(UserRequestDto dto) {
 
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new DuplicateResourceException("Email already exists");
         }
-  
+
         User user = new User();
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
-
-        //  PASSWORD ENCRYPTION (THIS IS THE KEY LINE)
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
 
         User savedUser = userRepository.save(user);
@@ -47,6 +47,7 @@ public class UserService {
         );
     }
 
+    // ===== GET ALL USERS =====
     public List<UserResponseDto> getAllUsers() {
         return userRepository.findAll()
                 .stream()
@@ -58,23 +59,7 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    public UserResponseDto updateUser(Long id, UserUpdateDto dto) {
-
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        user.setName(dto.getName());
-        user.setEmail(dto.getEmail());
-
-        User savedUser = userRepository.save(user);
-
-        return new UserResponseDto(
-                savedUser.getId(),
-                savedUser.getName(),
-                savedUser.getEmail()
-        );
-    }
-
+    // ===== GET USER BY ID =====
     public UserResponseDto getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -83,6 +68,28 @@ public class UserService {
                 user.getId(),
                 user.getName(),
                 user.getEmail()
+        );
+    }
+
+    // ===== UPDATE USER =====
+    public UserResponseDto updateUser(Long id, UserUpdateDto dto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!user.getEmail().equals(dto.getEmail())
+                && userRepository.existsByEmail(dto.getEmail())) {
+            throw new DuplicateResourceException("Email already exists");
+        }
+
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+
+        User updatedUser = userRepository.save(user);
+
+        return new UserResponseDto(
+                updatedUser.getId(),
+                updatedUser.getName(),
+                updatedUser.getEmail()
         );
     }
 }

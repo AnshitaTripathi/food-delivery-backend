@@ -8,6 +8,9 @@ import com.fooddelivery.backend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "User APIs", description = "APIs related to user management")
 public class UserController {
 
     private final UserService userService;
@@ -25,44 +29,58 @@ public class UserController {
         this.userService = userService;
     }
 
-    // CREATE USER 
-
-    @Operation(summary = "Create a new user")
+    //  CREATE USER 
+    @Operation(
+            summary = "Create a new user",
+            description = "Creates a new user with name, email and encrypted password"
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "User created successfully"),
             @ApiResponse(responseCode = "409", description = "Email already exists"),
-            @ApiResponse(responseCode = "400", description = "Invalid input")
+            @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     @PostMapping
-    public ResponseEntity<UserResponseDto> createUser(@RequestBody UserRequestDto dto) {
-        UserResponseDto createdUser = userService.createUser(dto);
-        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+    public ResponseEntity<UserResponseDto> createUser(
+            @Valid @RequestBody UserRequestDto dto
+    ) {
+        UserResponseDto response = userService.createUser(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // GET ALL USERS 
-
-    @Operation(summary = "Get all users")
-    @ApiResponse(responseCode = "200", description = "Users fetched successfully")
+    //  GET ALL USERS 
+    @Operation(
+            summary = "Get all users",
+            description = "Fetches list of all registered users"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Users fetched successfully")
+    })
     @GetMapping
     public ResponseEntity<List<UserResponseDto>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+        List<UserResponseDto> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 
     //  GET USER BY ID 
-
-    @Operation(summary = "Get user by ID")
+    @Operation(
+            summary = "Get user by ID",
+            description = "Fetch a user using user ID"
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "User found"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     @GetMapping("/{id}")
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+        UserResponseDto user = userService.getUserById(id);
+        return ResponseEntity.ok(user);
     }
 
-    //  UPDATE USER 
-
-    @Operation(summary = "Update user details")
+    // UPDATE USER 
+    @Operation(
+            summary = "Update user details",
+            description = "Updates user name and email using user ID"
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "User updated successfully"),
             @ApiResponse(responseCode = "404", description = "User not found"),
@@ -71,8 +89,8 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<UserResponseDto> updateUser(
             @PathVariable Long id,
-            @RequestBody UserUpdateDto dto) {
-
+            @Valid @RequestBody UserUpdateDto dto
+    ) {
         UserResponseDto updatedUser = userService.updateUser(id, dto);
         return ResponseEntity.ok(updatedUser);
     }
