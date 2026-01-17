@@ -1,19 +1,25 @@
 package com.fooddelivery.backend.config;
 
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
-import org.springframework.context.annotation.Bean;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@OpenAPIDefinition(
+        info = @Info(
+                title = "Food Delivery API",
+                version = "1.0",
+                description = "Backend APIs for Food Delivery App"
+        ),
+        security = @SecurityRequirement(name = "bearerAuth")
+)
+@SecurityScheme(
+        name = "bearerAuth",
+        scheme = "bearer",
+        bearerFormat = "JWT", type = SecuritySchemeType.HTTP
+)
 public class OpenApiConfig {
-
-    @Bean
-    public OpenAPI openAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("Food Delivery API")
-                        .description("Backend APIs for Food Delivery Application")
-                        .version("1.0.0"));
-    }
 }
