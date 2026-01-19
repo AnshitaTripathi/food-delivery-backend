@@ -2,6 +2,7 @@ package com.fooddelivery.backend.service;
 
 import com.fooddelivery.backend.dto.UserRequestDto;
 import com.fooddelivery.backend.dto.UserResponseDto;
+import com.fooddelivery.backend.dto.UserSelfUpdateDto;
 import com.fooddelivery.backend.dto.UserUpdateDto;
 import com.fooddelivery.backend.entity.Role;
 import com.fooddelivery.backend.entity.User;
@@ -99,13 +100,42 @@ public class UserService {
         );
     }
 
-    // ===== GET CURRENT LOGGED-IN USER =====
+    // ===== UPDATE CURRENT LOGGED-IN USER =====
+public UserResponseDto updateCurrentUser(UserSelfUpdateDto dto) {
+
+    Authentication authentication =
+            SecurityContextHolder.getContext().getAuthentication();
+
+    String emailFromToken = authentication.getName();
+
+    User user = userRepository.findByEmail(emailFromToken)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+    // Check email uniqueness (if changed)
+    if (!user.getEmail().equals(dto.getEmail())
+            && userRepository.existsByEmail(dto.getEmail())) {
+        throw new DuplicateResourceException("Email already exists");
+    }
+
+    user.setName(dto.getName());
+    user.setEmail(dto.getEmail());
+
+    User updatedUser = userRepository.save(user);
+
+    return new UserResponseDto(
+            updatedUser.getId(),
+            updatedUser.getName(),
+            updatedUser.getEmail()
+    );
+}
+
+// ===== GET CURRENT LOGGED-IN USER =====
 public UserResponseDto getCurrentUser() {
 
     Authentication authentication =
             SecurityContextHolder.getContext().getAuthentication();
 
-    String email = authentication.getName(); // JWT subject
+    String email = authentication.getName();
 
     User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -116,5 +146,7 @@ public UserResponseDto getCurrentUser() {
             user.getEmail()
     );
 }
+
+
 
 }
