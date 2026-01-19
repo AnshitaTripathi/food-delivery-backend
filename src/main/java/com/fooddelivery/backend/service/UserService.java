@@ -3,13 +3,18 @@ package com.fooddelivery.backend.service;
 import com.fooddelivery.backend.dto.UserRequestDto;
 import com.fooddelivery.backend.dto.UserResponseDto;
 import com.fooddelivery.backend.dto.UserUpdateDto;
+import com.fooddelivery.backend.entity.Role;
 import com.fooddelivery.backend.entity.User;
 import com.fooddelivery.backend.exceptions.DuplicateResourceException;
 import com.fooddelivery.backend.exceptions.ResourceNotFoundException;
 import com.fooddelivery.backend.repository.UserRepository;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,6 +42,7 @@ public class UserService {
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        user.setRole(Role.USER);
 
         User savedUser = userRepository.save(user);
 
@@ -92,4 +98,23 @@ public class UserService {
                 updatedUser.getEmail()
         );
     }
+
+    // ===== GET CURRENT LOGGED-IN USER =====
+public UserResponseDto getCurrentUser() {
+
+    Authentication authentication =
+            SecurityContextHolder.getContext().getAuthentication();
+
+    String email = authentication.getName(); // JWT subject
+
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+    return new UserResponseDto(
+            user.getId(),
+            user.getName(),
+            user.getEmail()
+    );
+}
+
 }

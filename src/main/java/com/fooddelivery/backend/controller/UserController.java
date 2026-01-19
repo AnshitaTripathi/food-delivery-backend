@@ -94,4 +94,21 @@ public class UserController {
         UserResponseDto updatedUser = userService.updateUser(id, dto);
         return ResponseEntity.ok(updatedUser);
     }
+
+        // ===== GET CURRENT LOGGED-IN USER =====
+    @Operation(
+            summary = "Get current logged-in user",
+            description = "Fetches the profile of the authenticated user using JWT"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User fetched successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDto> getMyProfile() {
+        UserResponseDto user = userService.getCurrentUser();
+        return ResponseEntity.ok(user);
+    }
+
 }
