@@ -2,6 +2,7 @@ package com.fooddelivery.backend.controller;
 
 import com.fooddelivery.backend.dto.UserRequestDto;
 import com.fooddelivery.backend.dto.UserResponseDto;
+import com.fooddelivery.backend.dto.UserSelfUpdateDto;
 import com.fooddelivery.backend.dto.UserUpdateDto;
 import com.fooddelivery.backend.service.UserService;
 
@@ -110,5 +111,23 @@ public class UserController {
         UserResponseDto user = userService.getCurrentUser();
         return ResponseEntity.ok(user);
     }
+    // ===== UPDATE CURRENT LOGGED-IN USER =====
+@Operation(
+        summary = "Update current logged-in user",
+        description = "Updates profile details of the authenticated user"
+)
+@ApiResponses({
+        @ApiResponse(responseCode = "200", description = "User updated successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "409", description = "Email already exists")
+})
+@SecurityRequirement(name = "bearerAuth")
+@PutMapping("/me")
+public ResponseEntity<UserResponseDto> updateMyProfile(
+        @Valid @RequestBody UserSelfUpdateDto dto
+) {
+    return ResponseEntity.ok(userService.updateCurrentUser(dto));
+}
+
 
 }
