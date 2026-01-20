@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 
 import java.io.IOException;
 
@@ -27,13 +28,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            HttpServletRequest request,   
+            HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // If already authenticated, skip
-        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        //  Skip ONLY if already authenticated AND not anonymous
+        if (authentication != null && !(authentication instanceof AnonymousAuthenticationToken)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -57,18 +60,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         UserDetails userDetails =
                 userDetailsService.loadUserByUsername(email);
 
-        UsernamePasswordAuthenticationToken authentication =
+        UsernamePasswordAuthenticationToken authToken =
                 new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
                         userDetails.getAuthorities()
                 );
 
-        authentication.setDetails(
+        authToken.setDetails(
                 new WebAuthenticationDetailsSource().buildDetails(request)
         );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        SecurityContextHolder.getContext().setAuthentication(authToken);
 
         filterChain.doFilter(request, response);
     }
