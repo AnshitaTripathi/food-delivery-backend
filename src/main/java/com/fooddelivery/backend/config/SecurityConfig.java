@@ -45,11 +45,23 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
 
+                // Public signup
+                .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+
+
+                 // MENU APIs
+                .requestMatchers(HttpMethod.POST, "/api/restaurants/*/menu")
+                .hasAuthority("ROLE_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/restaurants/*/menu")
+                .authenticated()
+
+
                 // RESTAURANTS
              .requestMatchers(HttpMethod.POST, "/api/restaurants/**")
             .hasAuthority("ROLE_ADMIN")
             .requestMatchers(HttpMethod.GET, "/api/restaurants/**")
             .authenticated()
+
 
                 // USER-only APIs (MUST COME FIRST)
                 .requestMatchers("/api/users/me").hasAuthority("ROLE_USER")
@@ -61,7 +73,7 @@ public class SecurityConfig {
                 // Everything else
                 .anyRequest().authenticated()
             )
-
+   
             // JWT Filter
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

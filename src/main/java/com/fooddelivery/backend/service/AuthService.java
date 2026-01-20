@@ -6,7 +6,6 @@ import com.fooddelivery.backend.entity.User;
 import com.fooddelivery.backend.exceptions.ResourceNotFoundException;
 import com.fooddelivery.backend.repository.UserRepository;
 import com.fooddelivery.backend.security.JwtService;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -35,8 +34,11 @@ public class AuthService {
             throw new ResourceNotFoundException("Invalid email or password");
         }
 
-        // SAME JwtService used everywhere
-        String token = jwtService.generateToken(user.getEmail());
+        //  Generate token with ROLE
+        String token = jwtService.generateToken(
+                user.getEmail(),
+                user.getRole().name()
+        );
 
         return new LoginResponseDto(token, user.getEmail());
     }

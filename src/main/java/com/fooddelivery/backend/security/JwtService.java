@@ -12,30 +12,31 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    //  SAME key must be used for generate + validate
     private static final String SECRET_KEY =
-            "my-super-secret-key-my-super-secret-key"; // min 32 chars
+            "my-super-secret-key-my-super-secret-key";
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     }
 
-    //  Generate token
-    public String generateToken(String email) {
+    public String generateToken(String email, String role) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("role", role)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1 hour
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    //  Extract email
     public String extractEmail(String token) {
         return extractAllClaims(token).getSubject();
     }
 
-    //  Validate token
+    public String extractRole(String token) {
+        return extractAllClaims(token).get("role", String.class);
+    }
+
     public boolean validateToken(String token) {
         try {
             extractAllClaims(token);
