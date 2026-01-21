@@ -24,60 +24,52 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-            // JWT = Stateless
+            // Stateless JWT security
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session ->
-                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
             .authorizeHttpRequests(auth -> auth
 
-                // Swagger
+                //  SWAGGER
                 .requestMatchers(
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/v3/api-docs/**"
                 ).permitAll()
 
-                
-
-                // Auth APIs
+                //  AUTH & SIGNUP 
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
 
-                // Public signup
-                .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                //  PUBLIC RESTAURANT APIs
+                .requestMatchers(HttpMethod.GET, "/api/restaurants/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/restaurants/*/menu").permitAll()
 
+                // USER APIs
+                .requestMatchers("/api/cart/**").hasRole("USER")
+                .requestMatchers("/api/users/me").hasRole("USER")
+                .requestMatchers("/api/users/me/**").hasRole("USER")
 
-                 // MENU APIs
-                .requestMatchers(HttpMethod.POST, "/api/restaurants/*/menu")
-                .hasAuthority("ROLE_ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/restaurants/*/menu")
-                .authenticated()
+                //  ADMIN APIs 
+                .requestMatchers(HttpMethod.POST, "/api/restaurants/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/restaurants/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/restaurants/**").hasRole("ADMIN")
 
+                .requestMatchers(HttpMethod.POST, "/api/restaurants/*/menu").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/restaurants/*/menu/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/restaurants/*/menu/**").hasRole("ADMIN")
 
-                // RESTAURANTS
-             .requestMatchers(HttpMethod.POST, "/api/restaurants/**")
-            .hasAuthority("ROLE_ADMIN")
-            .requestMatchers(HttpMethod.GET, "/api/restaurants/**")
-            .authenticated()
+                .requestMatchers("/api/users/**").hasRole("ADMIN")
 
-
-                // USER-only APIs (MUST COME FIRST)
-                .requestMatchers("/api/users/me").hasAuthority("ROLE_USER")
-                .requestMatchers("/api/users/me/**").hasAuthority("ROLE_USER")
-
-                // ADMIN-only APIs
-                .requestMatchers("/api/users/**").hasAuthority("ROLE_ADMIN")
-
-                // Everything else
+                //  FALLBACK 
                 .anyRequest().authenticated()
             )
-   
+
             // JWT Filter
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 }
-   
