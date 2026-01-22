@@ -37,12 +37,9 @@ public class OrderController {
                 .getAuthentication()
                 .getName();
 
-        OrderResponseDto order =
-                orderService.placeOrder(userEmail);
-
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(order);
+                .body(orderService.placeOrder(userEmail));
     }
 
     // ================= USER ORDER HISTORY =================
