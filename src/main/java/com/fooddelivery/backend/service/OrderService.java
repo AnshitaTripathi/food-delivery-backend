@@ -1,6 +1,5 @@
 package com.fooddelivery.backend.service;
 
-import com.fooddelivery.backend.dto.OrderItemResponseDto;
 import com.fooddelivery.backend.dto.OrderResponseDto;
 import com.fooddelivery.backend.entity.*;
 import com.fooddelivery.backend.exceptions.ResourceNotFoundException;
@@ -21,9 +20,11 @@ public class OrderService {
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
 
-    public OrderService(OrderRepository orderRepository,
-                        UserRepository userRepository,
-                        CartRepository cartRepository) {
+    public OrderService(
+            OrderRepository orderRepository,
+            UserRepository userRepository,
+            CartRepository cartRepository
+    ) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.cartRepository = cartRepository;
@@ -49,37 +50,36 @@ public class OrderService {
         order.setUser(user);
         order.setStatus(OrderStatus.PLACED);
 
-        // Convert cart items → order items
         List<OrderItem> orderItems = cart.getItems()
                 .stream()
                 .map(cartItem -> {
-                    OrderItem orderItem = new OrderItem();
-                    orderItem.setOrder(order);
-                    orderItem.setMenuItem(cartItem.getMenuItem());
-                    orderItem.setQuantity(cartItem.getQuantity());
-                    orderItem.setPrice(cartItem.getMenuItem().getPrice());
-                    return orderItem;
+                    OrderItem item = new OrderItem();
+                    item.setOrder(order);
+                    item.setMenuItem(cartItem.getMenuItem());
+                    item.setQuantity(cartItem.getQuantity());
+                    item.setPrice(cartItem.getMenuItem().getPrice());
+                    return item;
                 })
                 .collect(Collectors.toList());
 
         order.getItems().addAll(orderItems);
 
         double totalAmount = orderItems.stream()
-                .mapToDouble(item -> item.getPrice() * item.getQuantity())
+                .mapToDouble(i -> i.getPrice() * i.getQuantity())
                 .sum();
 
         order.setTotalAmount(totalAmount);
 
         Order savedOrder = orderRepository.save(order);
 
-        // Clear cart AFTER successful order
+        // Clear cart after successful order
         cart.getItems().clear();
         cartRepository.save(cart);
 
         return OrderResponseDto.from(savedOrder);
     }
 
-    //  USER ORDER HISTORY 
+    //  USER ORDERS 
     public List<OrderResponseDto> getOrdersByUser(String userEmail) {
 
         User user = userRepository.findByEmail(userEmail)
@@ -101,7 +101,7 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    //  ADMIN: UPDATE STATUS 
+    //  ADMIN: UPDATE STATUS
     public OrderResponseDto updateOrderStatus(Long orderId, OrderStatus status) {
 
         Order order = orderRepository.findById(orderId)
@@ -109,8 +109,6 @@ public class OrderService {
                         new ResourceNotFoundException("Order not found"));
 
         order.setStatus(status);
-        Order updatedOrder = orderRepository.save(order);
-
-        return OrderResponseDto.from(updatedOrder);
+        return OrderResponseDto.from(orderRepository.save(order));
     }
 }
