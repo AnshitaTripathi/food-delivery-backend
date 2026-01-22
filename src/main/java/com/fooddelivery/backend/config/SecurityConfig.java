@@ -4,8 +4,8 @@ import com.fooddelivery.backend.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -21,55 +21,57 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        http
-            // Stateless JWT security
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
+    http
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(session ->
+            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        )
+        .authorizeHttpRequests(auth -> auth
 
-            .authorizeHttpRequests(auth -> auth
+            // Swagger
+            .requestMatchers(
+                "/swagger-ui/**",
+                "/swagger-ui.html",
+                "/v3/api-docs/**"
+            ).permitAll()
 
-                //  SWAGGER
-                .requestMatchers(
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/v3/api-docs/**"
-                ).permitAll()
+            // Auth & signup
+            .requestMatchers("/api/auth/**").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
 
-                //  AUTH & SIGNUP 
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+            //  MENU APIs 
+            .requestMatchers(HttpMethod.GET, "/api/restaurants/*/menu")
+                .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
 
-                //  PUBLIC RESTAURANT APIs
-                .requestMatchers(HttpMethod.GET, "/api/restaurants/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/restaurants/*/menu").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/restaurants/*/menu")
+                .hasAuthority("ROLE_ADMIN")
 
-                // USER APIs
-                .requestMatchers("/api/cart/**").hasRole("USER")
-                .requestMatchers("/api/users/me").hasRole("USER")
-                .requestMatchers("/api/users/me/**").hasRole("USER")
+            //  RESTAURANTS
+            .requestMatchers(HttpMethod.GET, "/api/restaurants/**")
+                .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
 
-                //  ADMIN APIs 
-                .requestMatchers(HttpMethod.POST, "/api/restaurants/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/restaurants/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/restaurants/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.POST, "/api/restaurants/**")
+                .hasAuthority("ROLE_ADMIN")
 
-                .requestMatchers(HttpMethod.POST, "/api/restaurants/*/menu").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/restaurants/*/menu/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/restaurants/*/menu/**").hasRole("ADMIN")
+            // CART 
+            .requestMatchers("/api/cart/**")
+                .hasAuthority("ROLE_USER")
 
-                .requestMatchers("/api/users/**").hasRole("ADMIN")
+            //  ORDERS 
+            .requestMatchers("/api/orders/**")
+                .hasAuthority("ROLE_USER")
 
-                //  FALLBACK 
-                .anyRequest().authenticated()
-            )
+            //  ADMIN USERS 
+            .requestMatchers("/api/users/**")
+                .hasAuthority("ROLE_ADMIN")
 
-            // JWT Filter
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .anyRequest().authenticated()
+        )
+        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+    return http.build();
+}
+
 }
