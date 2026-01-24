@@ -1,6 +1,9 @@
 package com.fooddelivery.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +17,9 @@ public class Order {
     private Long id;
 
     // USER who placed the order
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     // ORDER ITEMS
@@ -24,22 +28,26 @@ public class Order {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
+    @JsonManagedReference
     private List<OrderItem> items = new ArrayList<>();
 
+    @Column(nullable = false)
     private double totalAmount;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OrderStatus status;
 
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    //  CONSTRUCTORS
-    public Order() {  
+    // CONSTRUCTOR
+    public Order() {
         this.createdAt = LocalDateTime.now();
         this.status = OrderStatus.PLACED;
     }
 
-    //  GETTERS & SETTERS 
+    // GETTERS & SETTERS
     public Long getId() {
         return id;
     }
@@ -76,4 +84,3 @@ public class Order {
         return createdAt;
     }
 }
-
