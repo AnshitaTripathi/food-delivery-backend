@@ -1,8 +1,6 @@
 package com.fooddelivery.backend.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
 
@@ -12,41 +10,51 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY =
-            "my-super-secret-key-my-super-secret-key";
+    private static final String SECRET =
+            "a-very-long-secret-key-at-least-256-bits-long-for-jwt";
+
+    private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24 hours
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+        return Keys.hmacShaKeyFor(SECRET.getBytes());
     }
 
+    //  CREATE TOKEN 
     public String generateToken(String email, String role) {
+
         return Jwts.builder()
                 .setSubject(email)
                 .claim("role", role)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String extractEmail(String token) {
-        return extractAllClaims(token).getSubject();
-    }
-
-    public String extractRole(String token) {
-        return extractAllClaims(token).get("role", String.class);
-    }
-
-    public boolean validateToken(String token) {
+    //  VALIDATE TOKEN 
+    public boolean isTokenValid(String token) {
         try {
-            extractAllClaims(token);
+            Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }
 
-    private Claims extractAllClaims(String token) {
+    //  EXTRACT EMAIL 
+    public String extractEmail(String token) {
+        return extractClaims(token).getSubject();
+    }
+
+    //  EXTRACT ROLE 
+    public String extractRole(String token) {
+        return extractClaims(token).get("role", String.class);
+    }
+
+    private Claims extractClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
