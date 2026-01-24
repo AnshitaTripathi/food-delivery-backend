@@ -50,6 +50,7 @@ public class OrderService {
         order.setUser(user);
         order.setStatus(OrderStatus.PLACED);
 
+        // Convert cart items → order items
         List<OrderItem> orderItems = cart.getItems()
                 .stream()
                 .map(cartItem -> {
@@ -72,27 +73,27 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        // Clear cart after successful order
+        // Clear cart AFTER successful order
         cart.getItems().clear();
         cartRepository.save(cart);
 
         return OrderResponseDto.from(savedOrder);
     }
 
-    //  USER ORDERS 
+    //  USER ORDER HISTORY 
     public List<OrderResponseDto> getOrdersByUser(String userEmail) {
 
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("User not found"));
 
-        return orderRepository.findByUser(user)
+        return orderRepository.findByUserOrderByCreatedAtDesc(user)
                 .stream()
                 .map(OrderResponseDto::from)
                 .collect(Collectors.toList());
     }
 
-    //  ADMIN: ALL ORDERS 
+    // ADMIN: ALL ORDERS
     public List<OrderResponseDto> getAllOrders() {
 
         return orderRepository.findAll()
@@ -101,14 +102,24 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    //  ADMIN: UPDATE STATUS
-    public OrderResponseDto updateOrderStatus(Long orderId, OrderStatus status) {
+    //  ADMIN: UPDATE STATUS 
+    public OrderResponseDto updateOrderStatus(Long orderId, OrderStatus newStatus) {
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Order not found"));
 
-        order.setStatus(status);
-        return OrderResponseDto.from(orderRepository.save(order));
+        OrderStatus currentStatus = order.getStatus();
+
+        if (!currentStatus.canTransitionTo(newStatus)) {
+            throw new IllegalStateException(
+                    "Cannot move order from " + currentStatus + " to " + newStatus
+            );
+        }
+
+        order.setStatus(newStatus);
+        Order updatedOrder = orderRepository.save(order);
+
+        return OrderResponseDto.from(updatedOrder);
     }
 }
