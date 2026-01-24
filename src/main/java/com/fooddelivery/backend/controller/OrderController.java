@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,8 +28,9 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    // ================= PLACE ORDER =================
+    //  PLACE ORDER (USER) 
     @Operation(summary = "Place order from cart")
+    @PreAuthorize("hasRole('USER')")
     @PostMapping
     public ResponseEntity<OrderResponseDto> placeOrder() {
 
@@ -42,8 +44,9 @@ public class OrderController {
                 .body(orderService.placeOrder(userEmail));
     }
 
-    // ================= USER ORDER HISTORY =================
+    //  USER ORDER HISTORY 
     @Operation(summary = "Get current user's orders")
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/me")
     public ResponseEntity<List<OrderResponseDto>> getMyOrders() {
 
@@ -57,8 +60,9 @@ public class OrderController {
         );
     }
 
-    // ================= ADMIN: ALL ORDERS =================
+    // ADMIN: ALL ORDERS 
     @Operation(summary = "Get all orders (ADMIN)")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<OrderResponseDto>> getAllOrders() {
 
@@ -67,8 +71,9 @@ public class OrderController {
         );
     }
 
-    // ================= ADMIN: UPDATE STATUS =================
+    //  ADMIN: UPDATE STATUS
     @Operation(summary = "Update order status (ADMIN)")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{orderId}/status")
     public ResponseEntity<OrderResponseDto> updateOrderStatus(
             @PathVariable Long orderId,
