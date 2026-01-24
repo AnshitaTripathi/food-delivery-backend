@@ -1,5 +1,6 @@
 package com.fooddelivery.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 @Entity
@@ -11,21 +12,24 @@ public class OrderItem {
     private Long id;
 
     // PARENT ORDER
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
+    @JsonBackReference
     private Order order;
 
-    // MENU ITEM (reference)
-    @ManyToOne
+    // MENU ITEM (snapshot reference)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "menu_item_id", nullable = false)
     private MenuItem menuItem;
 
+    @Column(nullable = false)
     private int quantity;
 
-    // price at the time of order (important!)
+    // price at the time of order (VERY IMPORTANT)
+    @Column(nullable = false)
     private double price;
 
-    //  GETTERS & SETTERS 
+    // GETTERS & SETTERS
     public Long getId() {
         return id;
     }
@@ -62,4 +66,3 @@ public class OrderItem {
         this.price = price;
     }
 }
-
