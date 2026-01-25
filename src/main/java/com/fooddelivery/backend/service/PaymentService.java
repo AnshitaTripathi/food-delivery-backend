@@ -1,10 +1,13 @@
 package com.fooddelivery.backend.service;
 
+import com.fooddelivery.backend.dto.PaymentOrderResponseDto;
 import com.fooddelivery.backend.entity.*;
 import com.fooddelivery.backend.exceptions.ResourceNotFoundException;
 import com.fooddelivery.backend.repository.OrderRepository;
 import com.fooddelivery.backend.repository.PaymentRepository;
-
+import com.razorpay.RazorpayClient;
+import com.razorpay.Order;
+import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,67 +16,79 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
+    private final RazorpayClient razorpayClient;
 
-    public PaymentService(PaymentRepository paymentRepository,
-                          OrderRepository orderRepository) {
+    public PaymentService(
+            PaymentRepository paymentRepository,
+            OrderRepository orderRepository,
+            RazorpayClient razorpayClient
+    ) {
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
+        this.razorpayClient = razorpayClient;
     }
 
-    //  INITIATE PAYMENT 
+    // ================= CREATE RAZORPAY ORDER =================
     @Transactional
-    public Payment initiatePayment(Long orderId, PaymentMethod method) {
+    public PaymentOrderResponseDto createRazorpayOrder(Long orderId) throws Exception {
 
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Order not found"));
+        com.fooddelivery.backend.entity.Order order =
+                orderRepository.findById(orderId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Order not found"));
 
         // Prevent duplicate payment
         paymentRepository.findByOrder(order).ifPresent(p -> {
             throw new IllegalStateException("Payment already initiated for this order");
         });
 
+        int amountInPaise = (int) (order.getTotalAmount() * 100);
+
+        JSONObject options = new JSONObject();
+        options.put("amount", amountInPaise);
+        options.put("currency", "INR");
+        options.put("receipt", "order_" + order.getId());
+
+       //  Razorpay Order
+    Order razorpayOrder = razorpayClient.orders.create(options);
+
+    Payment payment = new Payment();
+    payment.setOrder(order);
+    payment.setAmount(order.getTotalAmount());
+    payment.setMethod(PaymentMethod.RAZORPAY);
+    payment.setStatus(PaymentStatus.INITIATED);
+    payment.setRazorpayOrderId(razorpayOrder.get("id"));
+
+    paymentRepository.save(payment);
+
+    return new PaymentOrderResponseDto(
+            razorpayOrder.get("id"),
+            order.getTotalAmount(),
+            "INR"
+    );
+
+    }
+
+    // ================= CASH ON DELIVERY =================
+    @Transactional
+    public Payment createCodPayment(Long orderId) {
+
+        com.fooddelivery.backend.entity.Order order =
+                orderRepository.findById(orderId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Order not found"));
+
+        paymentRepository.findByOrder(order).ifPresent(p -> {
+            throw new IllegalStateException("Payment already exists for this order");
+        });
+
         Payment payment = new Payment();
         payment.setOrder(order);
         payment.setAmount(order.getTotalAmount());
-        payment.setMethod(method);
+        payment.setMethod(PaymentMethod.COD);
+        payment.setStatus(PaymentStatus.SUCCESS);
 
-        // COD = instant success
-        if (method == PaymentMethod.COD) {
-            payment.setStatus(PaymentStatus.SUCCESS);
-            order.setStatus(OrderStatus.CONFIRMED);
-        } else {
-            payment.setStatus(PaymentStatus.INITIATED);
-        }
-
-        Payment savedPayment = paymentRepository.save(payment);
-        orderRepository.save(order);
-
-        return savedPayment;
-    }
-
-    //  CONFIRM PAYMENT (UPI / CARD) 
-    @Transactional
-    public Payment confirmPayment(Long orderId, boolean success) {
-
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Order not found"));
-
-        Payment payment = paymentRepository.findByOrder(order)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Payment not found"));
-
-        if (payment.getStatus() != PaymentStatus.INITIATED) {
-            throw new IllegalStateException("Payment already processed");
-        }
-
-        if (success) {
-            payment.setStatus(PaymentStatus.SUCCESS);
-            order.setStatus(OrderStatus.CONFIRMED);
-        } else {
-            payment.setStatus(PaymentStatus.FAILED);
-        }
+        order.setStatus(OrderStatus.CONFIRMED);
 
         paymentRepository.save(payment);
         orderRepository.save(order);
@@ -81,12 +96,13 @@ public class PaymentService {
         return payment;
     }
 
-    //  GET PAYMENT BY ORDER 
+    // ================= GET PAYMENT BY ORDER =================
     public Payment getPaymentByOrder(Long orderId) {
 
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Order not found"));
+        com.fooddelivery.backend.entity.Order order =
+                orderRepository.findById(orderId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Order not found"));
 
         return paymentRepository.findByOrder(order)
                 .orElseThrow(() ->
