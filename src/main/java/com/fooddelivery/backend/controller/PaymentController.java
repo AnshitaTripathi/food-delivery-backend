@@ -1,7 +1,7 @@
 package com.fooddelivery.backend.controller;
 
+import com.fooddelivery.backend.dto.PaymentOrderResponseDto;
 import com.fooddelivery.backend.entity.Payment;
-import com.fooddelivery.backend.entity.PaymentMethod;
 import com.fooddelivery.backend.service.PaymentService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,34 +25,33 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
-    //  INITIATE PAYMENT 
-    @Operation(summary = "Initiate payment for an order")
+    //  RAZORPAY 
+    @Operation(summary = "Create Razorpay order")
     @PreAuthorize("hasRole('USER')")
-    @PostMapping("/initiate")
-    public ResponseEntity<Payment> initiatePayment(
-            @RequestParam Long orderId,
-            @RequestParam PaymentMethod method
+    @PostMapping("/razorpay/create")
+    public ResponseEntity<PaymentOrderResponseDto> createRazorpayOrder(
+            @RequestParam Long orderId
+    ) throws Exception {
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(paymentService.createRazorpayOrder(orderId));
+    }
+
+    //  CASH ON DELIVERY 
+    @Operation(summary = "Create COD payment")
+    @PreAuthorize("hasRole('USER')")
+    @PostMapping("/cod")
+    public ResponseEntity<Payment> createCodPayment(
+            @RequestParam Long orderId
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(paymentService.initiatePayment(orderId, method));
+                .body(paymentService.createCodPayment(orderId));
     }
 
-    //  CONFIRM PAYMENT (UPI / CARD) 
-    @Operation(summary = "Confirm payment (UPI / CARD)")
-    @PreAuthorize("hasRole('USER')")
-    @PostMapping("/confirm")
-    public ResponseEntity<Payment> confirmPayment(
-            @RequestParam Long orderId,
-            @RequestParam boolean success
-    ) {
-        return ResponseEntity.ok(
-                paymentService.confirmPayment(orderId, success)
-        );
-    }
-
-    //  GET PAYMENT BY ORDER 
-    @Operation(summary = "Get payment details for an order")
+    //  GET PAYMENT 
+    @Operation(summary = "Get payment by order")
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/order/{orderId}")
     public ResponseEntity<Payment> getPaymentByOrder(
