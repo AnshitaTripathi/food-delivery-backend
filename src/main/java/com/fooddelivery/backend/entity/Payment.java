@@ -30,6 +30,10 @@ public class Payment {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "razorpay_order_id")
+    private String razorpayOrderId;
+
+
     public Payment() {
         this.createdAt = LocalDateTime.now();
         this.status = PaymentStatus.INITIATED;
@@ -75,5 +79,14 @@ public class Payment {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
+    public String getRazorpayOrderId() {
+    return razorpayOrderId;
+}
+
+    public void setRazorpayOrderId(String razorpayOrderId) {
+    this.razorpayOrderId = razorpayOrderId;
+}
+
 }
 
