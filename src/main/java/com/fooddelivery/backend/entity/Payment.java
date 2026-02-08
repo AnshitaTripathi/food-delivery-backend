@@ -11,45 +11,41 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ONE payment per order
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false, unique = true)
-    private Order order;
+    @Column(nullable = false)
+    private Double amount;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(length = 30, nullable = false)
     private PaymentMethod method;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(length = 30, nullable = false)
     private PaymentStatus status;
-
-    @Column(nullable = false)
-    private double amount;
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     @Column(name = "razorpay_order_id")
     private String razorpayOrderId;
 
+    @OneToOne
+    @JoinColumn(name = "order_id", nullable = false, unique = true)
+    private Order order;
 
-    public Payment() {
-        this.createdAt = LocalDateTime.now();
-        this.status = PaymentStatus.INITIATED;
-    }
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    // Getters & setters
     public Long getId() {
         return id;
     }
 
-    public Order getOrder() {
-        return order;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public void setOrder(Order order) {
-        this.order = order;
+    public Double getAmount() {
+        return amount;
+    }
+
+    public void setAmount(Double amount) {
+        this.amount = amount;
     }
 
     public PaymentMethod getMethod() {
@@ -68,25 +64,28 @@ public class Payment {
         this.status = status;
     }
 
-    public double getAmount() {
-        return amount;
+    public String getRazorpayOrderId() {
+        return razorpayOrderId;
     }
 
-    public void setAmount(double amount) {
-        this.amount = amount;
+    public void setRazorpayOrderId(String razorpayOrderId) {
+        this.razorpayOrderId = razorpayOrderId;
+    }
+
+    public Order getOrder() {
+        return order;
+    }
+
+    public void setOrder(Order order) {
+        this.order = order;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public String getRazorpayOrderId() {
-    return razorpayOrderId;
-}
-
-    public void setRazorpayOrderId(String razorpayOrderId) {
-    this.razorpayOrderId = razorpayOrderId;
-}
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 
 }
-
