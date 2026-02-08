@@ -13,7 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity   // IMPORTANT for @PreAuthorize
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -26,13 +26,13 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-            //  STATELESS JWT 
+            //  JWT = STATELESS
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session ->
-                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
-            //  AUTHORIZATION 
+            //  AUTHORIZATION RULES (ONLY ONE BLOCK)
             .authorizeHttpRequests(auth -> auth
 
                 // ---------- Swagger ----------
@@ -62,7 +62,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
 
-            //  JWT FILTER 
+            // JWT FILTER
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
